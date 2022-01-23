@@ -1,0 +1,134 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+Bring in packages
+```{r}
+library(readr)
+library(tidyverse)
+library (stats)
+```
+
+Set working directory and make parent csv and quarterly csv into dataframes
+```{r}
+setwd("C:/Users/maddi/Desktop/Pubs/Pub3-EconFlow/rstudio")
+
+#ForR_AQ_Att <- read_csv("ForR_AQ_Att.csv")
+QUART_AQ_and_Attendance_Closures <- read_csv("QUART_AQ_and_Attendance_Closures.csv")
+
+#dfData_all<-data.frame(ForR_AQ_Att)
+dfData_quart<-data.frame(QUART_AQ_and_Attendance_Closures)
+```
+
+Explore data with basic ggplots - one per gate
+first: Arch Rock
+```{r}
+ggplot(data=dfData_quart, mapping=aes(x=QuarterYear, y=ArchRock, group=1))+geom_line()+ theme(axis.text.x=element_text(angle=-45, hjust=0.001))
+
+```
+
+second: Big Oak Flat
+```{r}
+ggplot(data=dfData_quart, mapping=aes(x=QuarterYear, y=BigOakFlat, group=1))+geom_line() + theme(axis.text.x=element_text(angle=-45, hjust=0.001))
+
+```
+
+third: Southgate
+```{r}
+ggplot(data=dfData_quart, mapping=aes(x=QuarterYear, y=Southgate, group=1))+geom_line()+ theme(axis.text.x=element_text(angle=-45, hjust=0.001))
+
+```
+
+fourth: Tioga Pass. Note very strong seasonality bc closures of pass every winter
+```{r}
+ggplot(data=dfData_quart, mapping=aes(x=QuarterYear, y=Southgate, group=1))+geom_line()+theme(axis.text.x=element_text(angle=-45, hjust=0.001))
+
+```
+
+Explore basic plot of unhealthy for sensitive 
+
+```{r}
+ggplot(data=dfData_quart, mapping=aes(x=QuarterYear, y=OverUnHS, group=1))+geom_line() + theme(axis.text.x=element_text(angle=-45, hjust=0.001))
+
+```
+
+Test correlation between smoky days and gate attendance (inelegant, but functional)
+Data are only normal as individual years, not as full 20 year series
+
+Full results: Each are moderately (>3) correlated, and the moderate correlation for all are statistically significant (p<0.05)
+There is stronger correlation between visitor count and bad AQ days for TP because it isn't open in winter
+
+WOrk on making this a for loop for elegance - in scratch section below
+```{r}
+corArch<-cor.test(QUART_AQ_and_Attendance_Closures$ArchRock, QUART_AQ_and_Attendance_Closures$OverUnHS, method=c("spearman"), exact = FALSE)
+corBig<-cor.test(QUART_AQ_and_Attendance_Closures$BigOakFlat, QUART_AQ_and_Attendance_Closures$OverUnHS, method=c("spearman"), exact = FALSE)
+corSouth<-cor.test(QUART_AQ_and_Attendance_Closures$Southgate, QUART_AQ_and_Attendance_Closures$OverUnHS, method=c("spearman"), exact = FALSE)
+corTioga<-cor.test(QUART_AQ_and_Attendance_Closures$TiogaPass, QUART_AQ_and_Attendance_Closures$OverUnHS, method=c("spearman"), exact = FALSE)
+
+print(corArch)
+print(corBig)
+print(corSouth)
+print(corTioga)
+```
+
+
+
+Multiple Linear Regression for air quality and gates, per prospectus, then ANOVA w/o TP
+
+I need to do this specifically for closure events
+```{r}
+fitAll<-lm(OverUnHS~ArchRock+BigOakFlat+Southgate+TiogaPass, data=dfData_quart)
+fitNoTP<-lm(OverUnHS~ArchRock+BigOakFlat+Southgate, data=dfData_quart)
+
+fitAll
+fitNoTP
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+SCRATCH
+work on this to make it a for loop
+```{r}
+NUM_data<-as.numeric(unlist((QUART_AQ_and_Attendance_Closures)))
+
+
+for (i in 6:length(NUM_data)) {
+  a <- cor.test(NUM_data$OverUnHS, NUM_data[,i])
+  print(paste(colnames(NUM_data)[i], " est:", a$estimate, " p=value:", a$p.value))
+}
+```
+
+T-tests gate attendance to gate attendance
+paired because they are NOT independent
+Goals = high t, low p
+
+Arch Rock test
+I dont think this is doing what i think it is
+
+
+```{r}
+tArchToBig<-t.test(QUART_AQ_and_Attendance_Closures$ArchRock, QUART_AQ_and_Attendance_Closures$BigOakFlat, paired=TRUE)
+tArchToSouth<-t.test(QUART_AQ_and_Attendance_Closures$ArchRock, QUART_AQ_and_Attendance_Closures$Southgate, paired=TRUE)
+tArchToTioga<-t.test(QUART_AQ_and_Attendance_Closures$ArchRock, QUART_AQ_and_Attendance_Closures$TiogaPass, paired=TRUE)
+
+print(tArchToBig)
+print(tArchToSouth)
+print(tArchToTioga)
+```
